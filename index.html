@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossMath Puzzle</title>
+    <!-- Google Font Import -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="start-screen" class="modal-overlay visible">
+        <div class="modal">
+            <h1>Cross-Math Puzzle</h1>
+            <p>Select a difficulty to start!</p>
+            <div class="difficulty-selector">
+                <button id="easy-btn" class="difficulty-btn">Easy</button>
+                <button id="medium-btn" class="difficulty-btn">Medium</button>
+                <button id="hard-btn" class="difficulty-btn">Hard</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal">
+            <h2>Congratulations!</h2>
+            <p>You solved the puzzle!</p>
+            <button id="next-level-btn">Next Level</button>
+            <button id="play-again-btn">Play Again</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="title-container">
+            <h1 id="game-title">CrossMath Puzzle</h1>
+            <p class="subheading">Addition</p>
+        </div>
+        <div id="puzzle-container">
+            <div id="crossword-grid"></div>
+        </div>
+        <div id="number-bank-container">
+            <h2>Numbers</h2>
+            <div id="number-bank"></div>
+        </div>
+        <button id="reset-btn">Reset</button>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
