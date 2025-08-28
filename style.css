@@ -1,7 +1,8 @@
 /* --- Base and Typography --- */
 body {
     font-family: 'Poppins', sans-serif;
-    background: #2c5364; /* Dark Teal Background */
+    background: linear-gradient(to right, rgb(109, 213, 237), rgb(33, 147, 176));
+
     color: #333;
     display: flex;
     justify-content: center;
@@ -12,21 +13,23 @@ body {
     box-sizing: border-box;
 }
 
-h1, h2 {
+h1,
+h2 {
     font-weight: 700;
     margin: 0;
 }
 
 /* --- Main Game Container --- */
 .container {
-    background-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.9);
     padding: 25px;
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     text-align: center;
     width: 100%;
     max-width: 500px;
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
     flex-direction: column;
     align-items: center;
 }
@@ -48,28 +51,39 @@ h1, h2 {
 }
 
 #puzzle-container {
-    margin: 20px 0;
+    display: inline-block;
+    margin: 20px auto;
 }
 
 #crossword-grid {
     display: grid;
-    gap: 5px;
+    gap: 8px;
+    padding: 25px;
+    border-width: initial;
+    border-style: none;
+    border-color: initial;
+    border-image: initial;
     justify-content: center;
     align-items: center;
+    background: linear-gradient(to right, rgb(109, 213, 237), rgb(33, 147, 176));
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 
 }
 
 /* --- Grid Cells --- */
 .cell {
-    width: 55px;
-    height: 55px;
-    border-radius: 10px;
+    width: 50px;
+    height: 50px;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.8em;
-    font-weight: 600;
-    transition: all 0.2s ease-in-out;
+    font-size: 24px;
+    font-weight: bold;
+    background-color: rgb(247, 247, 247);
+    color: rgb(85, 85, 85);
+    border-radius: 10px;
+    transition: background-color 0.3s, transform 0.2s;
 }
 
 .cell.empty {
@@ -103,6 +117,15 @@ h1, h2 {
 }
 
 /* --- Number Bank --- */
+
+#number-bank-container {
+    margin-top: 20px;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 15px;
+    border-radius: 15px;
+
+}
+
 #number-bank-container h2 {
     color: #2c5364;
     margin-bottom: 10px;
@@ -168,7 +191,8 @@ h1, h2 {
 /* --- Modal Styles --- */
 .modal-overlay {
     position: fixed;
-    top: 0; left: 0;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
@@ -191,15 +215,30 @@ h1, h2 {
     padding: 30px 40px;
     border-radius: 15px;
     text-align: center;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     max-width: 90%;
 }
 
-.modal h1 { color: #2c5364; font-size: 2em; margin-bottom: 10px; }
-.modal h2 { color: #28a745; font-size: 1.8em; margin-bottom: 10px; }
-.modal p { margin-bottom: 25px; font-size: 1.1em; color: #6c757d; }
+.modal h1 {
+    color: #2c5364;
+    font-size: 2em;
+    margin-bottom: 10px;
+}
 
-.modal button, .difficulty-btn {
+.modal h2 {
+    color: #28a745;
+    font-size: 1.8em;
+    margin-bottom: 10px;
+}
+
+.modal p {
+    margin-bottom: 25px;
+    font-size: 1.1em;
+    color: #6c757d;
+}
+
+.modal button,
+.difficulty-btn {
     background-color: #007bff;
     color: white;
     border: none;
@@ -212,7 +251,8 @@ h1, h2 {
     transition: all 0.2s ease;
 }
 
-.modal button:hover, .difficulty-btn:hover {
+.modal button:hover,
+.difficulty-btn:hover {
     background-color: #0056b3;
     transform: translateY(-2px);
     box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
@@ -223,6 +263,7 @@ h1, h2 {
     body {
         padding: 10px;
     }
+
     .container {
         padding: 15px;
     }
@@ -235,7 +276,8 @@ h1, h2 {
         font-size: 1em;
     }
 
-    .cell, .number-item {
+    .cell,
+    .number-item {
         width: 45px;
         height: 45px;
         font-size: 1.5em;
@@ -253,7 +295,9 @@ h1, h2 {
 }
 
 @media (max-width: 380px) {
-    .cell, .number-item {
+
+    .cell,
+    .number-item {
         width: 40px;
         height: 40px;
         font-size: 1.3em;
