@@ -59,6 +59,7 @@ h2 {
 .difficulty-selector {
     display: flex;
     justify-content: center;
+    align-items: center;
     gap: 10px;
     flex-wrap: wrap;
     flex-direction: column;
@@ -387,6 +388,7 @@ h2 {
     margin: 5px;
     transition: all 0.2s ease;
     position: relative;
+    width: 80%;
 }
 
 .modal button:hover,
