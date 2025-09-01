@@ -258,15 +258,17 @@ h2 {
 }
 
 .cell.correct {
-    background-color: #d4edda;
-    color: #39a5ec;
+    background-color: #74ffa3;
+    color: #029aff;
     transform: scale(1.05);
+    filter: drop-shadow(0 0 8px rgb(0, 255, 38));
 }
 
 .cell.incorrect {
-    background-color: #f8d7da;
+    background-color: #ffb5bb;
     color: #f32c40;
     transform: scale(1.05);
+    filter: drop-shadow(0 0 8px rgba(243, 44, 64, 0.6));
 }
 
 /* --- Number Bank --- */
