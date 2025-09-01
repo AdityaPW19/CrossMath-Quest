@@ -259,13 +259,13 @@ h2 {
 
 .cell.correct {
     background-color: #d4edda;
-    color: #155724;
+    color: #39a5ec;
     transform: scale(1.05);
 }
 
 .cell.incorrect {
     background-color: #f8d7da;
-    color: #721c24;
+    color: #f32c40;
     transform: scale(1.05);
 }
 
@@ -475,6 +475,7 @@ h2 {
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 36px;
 }
 
 .close-btn svg {
