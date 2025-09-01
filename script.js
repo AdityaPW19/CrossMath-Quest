@@ -1,108 +1,192 @@
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     // MODALS AND SCREENS
-    const startScreen = document.getElementById('start-screen');
     const successModal = document.getElementById('success-modal');
-    const gameContainer = document.querySelector('.container');
+    const startContent = document.getElementById('start-content');
+    const gameContent = document.getElementById('game-content');
+
+    // NEW ELEMENTS
+    const rulesModal = document.getElementById('rules-modal');
+    const welcomeMessage = document.getElementById('welcome-message');
+    const playerLevelInfo = document.getElementById('player-level-info');
+    const gameInfoList = document.getElementById('game-info');
+    const infoBtn = document.getElementById('info-btn');
+    const closeRulesBtn = document.getElementById('close-rules-btn');
+    const backFromRulesBtn = document.getElementById('back-from-rules-btn');
 
     // GAME ELEMENTS
     const gridElement = document.getElementById('crossword-grid');
     const numberBankElement = document.getElementById('number-bank');
+    const levelDisplay = document.getElementById('level-display');
+    const difficultyDisplay = document.getElementById('difficulty-display');
     
     // BUTTONS
-    const difficultyBtns = document.querySelectorAll('.difficulty-btn');
+    const easyBtn = document.getElementById('easy-btn');
+    const mediumBtn = document.getElementById('medium-btn');
+    const hardBtn = document.getElementById('hard-btn');
     const resetBtn = document.getElementById('reset-btn');
+    const backBtn = document.getElementById('back-btn');
+    const clearBtn = document.getElementById('clear-btn');
     const nextLevelBtn = document.getElementById('next-level-btn');
     const playAgainBtn = document.getElementById('play-again-btn');
 
-    let currentDifficulty = 'easy';
+    let currentLevel = 1;
+    let playerProgress = { highestLevelCompleted: 0 };
+    let config = {};
+    let levels = [];
     let selectedValue = null;
     let selectedElement = null;
+    let placementHistory = [];
 
-    // 'B' signifies a blank, non-interactive cell
     const B = 'B'; 
 
-    const puzzles = {
-        easy: {
-            //  1 + [3] = 4
-            //  +   B   +
-            // [2] + 4 = [6]
-            //  =   B   =
-            //  3 + [7] = 10
-            grid: [
-                [1,   '+', B,   '=', 4],
-                ['+', B,   '+', B,   B],
-                [B,   '+', 4,   '=', B],
-                ['=', B,   '=', B,   B],
-                [3,   '+', B,   '=', 10]
-            ],
-            // Values in empty cells are stored here as objects with their coords
-            emptyCells: [ 
-                { r: 0, c: 2, value: 3 },
-                { r: 2, c: 0, value: 2 },
-                { r: 2, c: 4, value: 6 },
-                { r: 4, c: 2, value: 7 },
-            ],
-            numbers: [3, 2, 6, 7]
-        },
-        medium: {
-            // [9] +  8  = 17
-            //  +    B    +
-            //  4  + [5] = [9]
-            //  =    B    =
-            // [13] + 13 = 26
-            grid: [
-                [B, '+', 8, '=', 17],
-                ['+', B, '+', B, B],
-                [4, '+', B, '=', B],
-                ['=', B, '=', B, B],
-                [B, '+', 13, '=', 26]
-            ],
-            emptyCells: [
-                { r: 0, c: 0, value: 9 },
-                { r: 2, c: 2, value: 5 },
-                { r: 2, c: 4, value: 9 },
-                { r: 4, c: 0, value: 13 },
-            ],
-            numbers: [9, 5, 9, 13]
-        },
-        hard: {
-            //  2  + 17  = [19]
-            //  +    B    +
-            // [9] +  5  = [14]
-            //  =    B    =
-            //  11 + [22] = 33
-            grid: [
-                [2, '+', 17, '=', B],
-                ['+', B, '+', B, B],
-                [B, '+', 5, '=', B],
-                ['=', B, '=', B, B],
-                [11, '+', B, '=', 33]
-            ],
-            emptyCells: [
-                { r: 0, c: 4, value: 19 },
-                { r: 2, c: 0, value: 9 },
-                { r: 2, c: 4, value: 14 },
-                { r: 4, c: 2, value: 22 },
-            ],
-            numbers: [19, 9, 14, 22]
-        }
-    };
-
-    function startGame(difficulty) {
-        currentDifficulty = difficulty;
-        generatePuzzle(difficulty);
-        startScreen.classList.remove('visible');
-        gameContainer.style.display = 'block';
+    // --- INITIALIZATION ---
+    try {
+        const response = await fetch('puzzles.json');
+        const puzzleData = await response.json();
+        config = puzzleData.config;
+        levels = puzzleData.levels;
+        loadProgress();
+        updateStartScreen();
+        populateRulesModal();
+    } catch (error) {
+        console.error("Error loading puzzle data:", error);
+        startContent.innerHTML = `<h1>Error</h1><p>Could not load game data. Please try again later.</p>`;
+        return;
     }
 
-    function generatePuzzle(difficulty) {
-        const puzzle = puzzles[difficulty];
-        const layout = puzzle.grid;
+    // --- PROGRESS MANAGEMENT ---
+    function loadProgress() {
+        const savedProgress = localStorage.getItem('crossMathPlayerProgress');
+        if (savedProgress) {
+            playerProgress = JSON.parse(savedProgress);
+            console.log("Loaded player progress:", playerProgress);
+        }
+    }
+
+    function saveProgress() {
+        localStorage.setItem('crossMathPlayerProgress', JSON.stringify(playerProgress));
+    }
+
+    // --- START SCREEN UPDATES ---
+    function updateStartScreen() {
+        const { easy, medium, hard } = config.difficulties;
+        
+        // Update difficulty buttons
+        mediumBtn.disabled = playerProgress.highestLevelCompleted < medium.unlocksAt - 1;
+        hardBtn.disabled = playerProgress.highestLevelCompleted < hard.unlocksAt - 1;
+        
+        // Update welcome message based on player progress
+        if (playerProgress.highestLevelCompleted === 0) {
+            welcomeMessage.textContent = "Welcome to CrossMath!";
+            playerLevelInfo.innerHTML = "Solve math puzzles by completing the crossword grid.";
+        } else {
+            const nextLevel = playerProgress.highestLevelCompleted + 1;
+            welcomeMessage.textContent = "Welcome back!";
+            
+            // Determine which difficulty the player is currently on
+            let currentDifficulty = "Easy";
+            if (nextLevel >= hard.levelRange[0]) {
+                currentDifficulty = "Hard";
+            } else if (nextLevel >= medium.levelRange[0]) {
+                currentDifficulty = "Medium";
+            }
+            
+            playerLevelInfo.innerHTML = `You're on <span class="current-level">Level ${nextLevel}</span> (${currentDifficulty})`;
+        }
+    }
+
+    // --- RULES MODAL FUNCTIONS ---
+    function populateRulesModal() {
+        // Clear existing content
+        gameInfoList.innerHTML = '';
+        
+        // Add total levels info
+        const totalLevels = levels.length;
+        const li1 = document.createElement('li');
+        li1.textContent = `Total levels: ${totalLevels}`;
+        gameInfoList.appendChild(li1);
+        
+        // Add difficulty info
+        const { easy, medium, hard } = config.difficulties;
+        
+        const li2 = document.createElement('li');
+        li2.textContent = `Easy levels: ${easy.levelRange[0]} to ${easy.levelRange[1]}`;
+        gameInfoList.appendChild(li2);
+        
+        const li3 = document.createElement('li');
+        li3.textContent = `Medium levels: ${medium.levelRange[0]} to ${medium.levelRange[1]} (Unlocks after level ${medium.unlocksAt - 1})`;
+        gameInfoList.appendChild(li3);
+        
+        const li4 = document.createElement('li');
+        li4.textContent = `Hard levels: ${hard.levelRange[0]} to ${hard.levelRange[1]} (Unlocks after level ${hard.unlocksAt - 1})`;
+        gameInfoList.appendChild(li4);
+    }
+
+    function showRulesModal() {
+        rulesModal.style.display = 'flex';
+        setTimeout(() => {
+            rulesModal.classList.add('visible');
+        }, 10);
+    }
+
+    function hideRulesModal() {
+        rulesModal.classList.remove('visible');
+        setTimeout(() => {
+            rulesModal.style.display = 'none';
+        }, 300);
+    }
+
+    // --- GAME FLOW ---
+    function startGame(levelNumber) {
+        currentLevel = levelNumber;
+        generatePuzzle(levelNumber);
+        startContent.style.display = 'none';
+        gameContent.style.display = 'flex';
+    }
+
+    function returnToStartScreen() {
+        gameContent.style.display = 'none';
+        startContent.style.display = 'block';
+        updateStartScreen(); // Update the welcome message when returning to start screen
+    }
+
+    function onPuzzleComplete() {
+        if (currentLevel > playerProgress.highestLevelCompleted) {
+            playerProgress.highestLevelCompleted = currentLevel;
+            saveProgress();
+            updateStartScreen(); // Update the welcome message when progress changes
+        }
+        
+        successModal.style.display = 'flex';
+        setTimeout(() => {
+            successModal.classList.add('visible');
+        }, 10);
+    }
+
+    // --- PUZZLE GENERATION ---
+    function generatePuzzle(levelNumber) {
+        const puzzle = levels.find(l => l.level === levelNumber);
+        if (!puzzle) {
+            console.error(`Puzzle for level ${levelNumber} not found!`);
+            returnToStartScreen();
+            return;
+        }
+
+        const difficultyKey = Object.keys(config.difficulties).find(key => {
+            const diff = config.difficulties[key];
+            return levelNumber >= diff.levelRange[0] && levelNumber <= diff.levelRange[1];
+        });
+        const difficulty = config.difficulties[difficultyKey];
+
+        levelDisplay.textContent = `Level ${puzzle.level}`;
+        difficultyDisplay.textContent = difficulty.displayName;
+        
         gridElement.innerHTML = '';
         numberBankElement.innerHTML = '';
-        gridElement.style.gridTemplateColumns = `repeat(${layout[0].length}, 50px)`;
+        placementHistory = [];
+        gridElement.style.gridTemplateColumns = `repeat(${puzzle.grid[0].length}, 50px)`;
 
-        layout.forEach((row, r) => {
+        puzzle.grid.forEach((row, r) => {
             row.forEach((content, c) => {
                 const cell = document.createElement('div');
                 cell.classList.add('cell');
@@ -135,19 +219,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function onCellClick(cell) {
-        if (selectedValue !== null) { // Place a selected number
+        if (selectedValue !== null) {
             placeNumber(cell);
-        } else if (cell.textContent !== '') { // Pick up a number from the grid
+        } else if (cell.textContent !== '') {
             pickupNumberFromGrid(cell);
         }
     }
 
     function selectNumberFromBank(num, element) {
         if (element.classList.contains('used')) return;
-        if (selectedElement === element) {
-            clearSelection();
-            return;
-        }
+        if (selectedElement === element) { clearSelection(); return; }
         clearSelection();
         selectedValue = num;
         selectedElement = element;
@@ -156,47 +237,65 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function pickupNumberFromGrid(cell) {
         const num = parseInt(cell.textContent);
-        const correspondingBankItem = Array.from(numberBankElement.children).find(
-            el => parseInt(el.textContent) === num && el.classList.contains('used')
-        );
-        if (correspondingBankItem) {
-            correspondingBankItem.classList.remove('used');
+        
+        const bankItems = Array.from(numberBankElement.children);
+        for(let i = 0; i < bankItems.length; i++){
+            if(parseInt(bankItems[i].textContent) === num && bankItems[i].classList.contains('used')){
+                bankItems[i].classList.remove('used');
+                break;
+            }
         }
+
         cell.textContent = '';
         cell.classList.remove('correct', 'incorrect');
-        validateEquations(); // Re-validate after removing a number
+        placementHistory = placementHistory.filter(item => item.cell !== cell);
+        validateEquations();
     }
 
     function placeNumber(targetCell) {
-        if (targetCell.textContent !== '') { // If cell is already filled
-            pickupNumberFromGrid(targetCell); // Pick up the existing number first
-        }
+        if (targetCell.textContent !== '') { pickupNumberFromGrid(targetCell); }
+        
         targetCell.textContent = selectedValue;
         selectedElement.classList.add('used');
+        placementHistory.push({ cell: targetCell, bankItem: selectedElement });
+        
         clearSelection();
         validateEquations();
     }
     
     function clearSelection() {
-        if (selectedElement) {
-            selectedElement.classList.remove('selected');
-        }
+        if (selectedElement) { selectedElement.classList.remove('selected'); }
         selectedValue = null;
         selectedElement = null;
     }
 
+    function clearLastEntry() {
+        if (placementHistory.length > 0) {
+            const lastPlacement = placementHistory.pop();
+            const lastCell = lastPlacement.cell;
+            lastCell.textContent = '';
+            lastCell.classList.remove('correct', 'incorrect');
+            lastPlacement.bankItem.classList.remove('used');
+            validateEquations();
+        }
+    }
+
+    // --- EQUATION VALIDATION ---
     function validateEquations() {
         const gridCells = gridElement.querySelectorAll('.cell');
         gridCells.forEach(c => c.classList.remove('correct', 'incorrect'));
         
+        const puzzle = levels.find(l => l.level === currentLevel);
+        if (!puzzle) return;
+
         const equations = findEquations();
         let allEquationsCorrect = true;
         let allEmptyCellsFilled = true;
 
-        puzzles[currentDifficulty].emptyCells.forEach(ec => {
+        puzzle.emptyCells.forEach(ec => {
             const cell = gridElement.querySelector(`[data-row='${ec.r}'][data-col='${ec.c}']`);
-            if (!cell.textContent) {
-                allEmptyCellsFilled = false;
+            if (!cell || !cell.textContent) { 
+                allEmptyCellsFilled = false; 
             }
         });
 
@@ -204,70 +303,133 @@ document.addEventListener('DOMContentLoaded', () => {
             const cell1 = gridElement.querySelector(`[data-row='${eq.r1}'][data-col='${eq.c1}']`);
             const cell2 = gridElement.querySelector(`[data-row='${eq.r2}'][data-col='${eq.c2}']`);
             const resultCell = gridElement.querySelector(`[data-row='${eq.rr}'][data-col='${eq.cr}']`);
-
+            
+            if (!cell1 || !cell2 || !resultCell) return;
+            
             const val1 = parseInt(cell1.textContent);
             const val2 = parseInt(cell2.textContent);
             const resultVal = parseInt(resultCell.textContent);
+            const operator = eq.op;
 
-            if (!isNaN(val1) && !isNaN(val2) && !isNaN(resultVal)) {
-                const isCorrect = (val1 + val2 === resultVal);
-                const classToAdd = isCorrect ? 'correct' : 'incorrect';
-                
-                if (!cell1.classList.contains('static')) cell1.classList.add(classToAdd);
-                if (!cell2.classList.contains('static')) cell2.classList.add(classToAdd);
-                if (!resultCell.classList.contains('static')) resultCell.classList.add(classToAdd);
+            if (isNaN(val1) || isNaN(val2) || isNaN(resultVal)) {
+                allEquationsCorrect = false;
+                return;
+            }
 
-                if (!isCorrect) allEquationsCorrect = false;
+            let isCorrect = false;
+            switch (operator) {
+                case '+': isCorrect = (val1 + val2 === resultVal); break;
+                case '-': isCorrect = (val1 - val2 === resultVal); break;
+                case '*': isCorrect = (val1 * val2 === resultVal); break;
+                case '/': isCorrect = (val1 / val2 === resultVal && val1 % val2 === 0); break;
+            }
+            
+            if (isCorrect) {
+                cell1.classList.add('correct');
+                cell2.classList.add('correct');
+                resultCell.classList.add('correct');
             } else {
+                // *** DEBUGGING: Log which equation failed ***
+                console.log(`Equation failed: ${val1} ${operator} ${val2} !== ${resultVal} at [r:${eq.r1},c:${eq.c1}]`);
+                cell1.classList.add('incorrect');
+                cell2.classList.add('incorrect');
+                resultCell.classList.add('incorrect');
                 allEquationsCorrect = false;
             }
         });
 
-        if (allEmptyCellsFilled && allEquationsCorrect) {
-            successModal.classList.add('visible');
+        // *** DEBUGGING: Log validation status ***
+        console.log("Validation check:", {
+            allEmptyCellsFilled,
+            allEquationsCorrect,
+            equationsFound: equations.length
+        });
+
+        if (allEmptyCellsFilled && allEquationsCorrect && equations.length > 0) {
+            onPuzzleComplete();
         }
     }
 
-    function findEquations() {
-        const puzzle = puzzles[currentDifficulty];
-        const grid = puzzle.grid;
-        const equations = [];
-        // Find horizontal equations
-        for (let r = 0; r < grid.length; r++) {
-            for (let c = 0; c < grid[r].length - 4; c++) {
-                if (grid[r][c+1] === '+' && grid[r][c+3] === '=') {
-                    equations.push({r1: r, c1: c, r2: r, c2: c + 2, rr: r, cr: c + 4});
-                }
-            }
+    // *** REWRITTEN FUNCTION ***
+    // This new function is more reliable as it looks for the '=' sign to define an equation,
+    // which matches the structure of your puzzle grid.
+function findEquations() {
+    const puzzle = levels.find(l => l.level === currentLevel);
+    if (!puzzle) return [];
+    
+    const grid = puzzle.grid;
+    const equations = [];
+    const operators = ['+', '-', '*', '/'];
+    
+    // Horizontal equations: check rows 0, 2, and 4
+    for (let r = 0; r < grid.length; r += 2) {
+        // Check if the row contains an operator and an equals sign in the right places
+        if (operators.includes(grid[r][1]) && grid[r][3] === '=') {
+            equations.push({r1: r, c1: 0, op: grid[r][1], r2: r, c2: 2, rr: r, cr: 4});
         }
-        // Find vertical equations
-        for (let r = 0; r < grid.length - 4; r++) {
-            for (let c = 0; c < grid[r].length; c++) {
-                if (grid[r+1][c] === '+' && grid[r+3][c] === '=') {
-                    equations.push({r1: r, c1: c, r2: r + 2, c2: c, rr: r + 4, cr: c});
-                }
-            }
-        }
-        return equations;
     }
-
+    
+    // Vertical equations: check columns 0, 2 but SKIP column 4
+    for (let c = 0; c < grid[0].length; c += 2) {
+        if (c === 4) { // Explicitly skip the final "results" column
+            continue;
+        }
+        // Check if the column contains an operator and an equals sign
+        if (operators.includes(grid[1][c]) && grid[3][c] === '=') {
+            equations.push({r1: 0, c1: c, op: grid[1][c], r2: 2, c2: c, rr: 4, cr: c});
+        }
+    }
+    
+    // *** DEBUGGING: Log the equations that were found ***
+    console.log(`Found ${equations.length} equations to validate for Level ${currentLevel}.`);
+    return equations;
+}
     // --- Event Listeners ---
-    difficultyBtns.forEach(btn => {
-        btn.addEventListener('click', () => startGame(btn.id.replace('-btn', '')));
-    });
+    // New event listeners for rules modal
+    infoBtn.addEventListener('click', showRulesModal);
+    closeRulesBtn.addEventListener('click', hideRulesModal);
+    backFromRulesBtn.addEventListener('click', hideRulesModal);
 
-    resetBtn.addEventListener('click', () => generatePuzzle(currentDifficulty));
+    // Existing event listeners
+    backBtn.addEventListener('click', returnToStartScreen);
+    clearBtn.addEventListener('click', clearLastEntry);
+    resetBtn.addEventListener('click', () => generatePuzzle(currentLevel));
     
     playAgainBtn.addEventListener('click', () => {
         successModal.classList.remove('visible');
-        generatePuzzle(currentDifficulty);
+        setTimeout(() => {
+            successModal.style.display = 'none';
+            generatePuzzle(currentLevel);
+        }, 300);
     });
 
     nextLevelBtn.addEventListener('click', () => {
         successModal.classList.remove('visible');
-        const difficulties = Object.keys(puzzles);
-        const currentIndex = difficulties.indexOf(currentDifficulty);
-        const nextIndex = (currentIndex + 1) % difficulties.length;
-        startGame(difficulties[nextIndex]);
+        const nextLevel = currentLevel + 1;
+        if (levels.find(l => l.level === nextLevel)) {
+            setTimeout(() => {
+                successModal.style.display = 'none';
+                startGame(nextLevel);
+            }, 300);
+        } else {
+            setTimeout(() => {
+                successModal.style.display = 'none';
+                alert("Congratulations! You've completed all levels!");
+                returnToStartScreen();
+            }, 300);
+        }
+    });
+
+    easyBtn.addEventListener('click', () => {
+        const startLevel = Math.max(config.difficulties.easy.levelRange[0], playerProgress.highestLevelCompleted + 1);
+        startGame(startLevel > config.difficulties.easy.levelRange[1] ? config.difficulties.easy.levelRange[0] : startLevel);
+    });
+    mediumBtn.addEventListener('click', () => {
+        const startLevel = Math.max(config.difficulties.medium.levelRange[0], playerProgress.highestLevelCompleted + 1);
+        startGame(startLevel > config.difficulties.medium.levelRange[1] ? config.difficulties.medium.levelRange[0] : startLevel);
+    });
+    hardBtn.addEventListener('click', () => {
+        const startLevel = Math.max(config.difficulties.hard.levelRange[0], playerProgress.highestLevelCompleted + 1);
+        startGame(startLevel > config.difficulties.hard.levelRange[1] ? config.difficulties.hard.levelRange[0] : startLevel);
     });
 });
