@@ -3,13 +3,14 @@ body {
     font-family: 'Poppins', sans-serif;
     /* UPDATE: Combined background layers. The first layer is a semi-transparent white overlay on the image, 
        and the second layer is the original gradient. This makes the image appear faded on top of the gradient. */
-    background: 
-       linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), 
-        url('assets/maths-bg.png'), 
+    background:
+        linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)),
+        url('assets/maths-bg.png'),
         linear-gradient(to right, rgb(109, 213, 237), rgb(33, 147, 176));
     background-size: cover;
     background-repeat: no-repeat;
-    background-attachment: fixed; /* Keeps the background static during scroll */
+    background-attachment: fixed;
+    /* Keeps the background static during scroll */
     display: block;
     min-height: 100vh;
     margin: 0;
@@ -60,9 +61,10 @@ h2 {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
     flex-wrap: wrap;
     flex-direction: column;
+    margin-top: 20px;
 }
 
 /* UPDATE: The game content is hidden by default */
@@ -123,7 +125,9 @@ h2 {
     color: #2c5364;
 }
 
-.header-left, .header-center, .header-right {
+.header-left,
+.header-center,
+.header-right {
     display: flex;
     align-items: center;
 }
@@ -394,6 +398,96 @@ h2 {
 
 .difficulty-btn {
     width: 80%;
+    color: white;
+    border: none;
+    padding: 14px 25px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 5px;
+    transition: all 0.3s ease;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* Easy button - Green gradient */
+#easy-btn {
+    background: linear-gradient(135deg, #52c234, #36a82b);
+}
+
+#easy-btn:hover {
+    background: linear-gradient(135deg, #61d543, #41c234);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(82, 194, 52, 0.4);
+}
+
+/* Medium button - Yellow/Orange gradient */
+#medium-btn {
+    background: linear-gradient(135deg, #ffb347, #ffcc33);
+}
+
+#medium-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ffc357, #ffd44d);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(255, 179, 71, 0.4);
+}
+
+/* Hard button - Red gradient */
+#hard-btn {
+    background: linear-gradient(135deg, #ff416c, #ff4b2b);
+}
+
+#hard-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ff5a7c, #ff6b4b);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(255, 65, 108, 0.4);
+}
+
+/* Disabled button styles */
+.difficulty-btn:disabled {
+    background: linear-gradient(135deg, #9EADBA, #7f8c97);
+    cursor: not-allowed;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transform: none;
+    opacity: 0.8;
+}
+
+/* Lock icon styling */
+.difficulty-btn .lock-icon {
+    display: none;
+    /* Hidden by default */
+    width: 18px;
+    height: 18px;
+    fill: #fff;
+    margin-left: 12px;
+}
+
+.difficulty-btn:disabled .lock-icon {
+    display: inline-block;
+    /* Show lock icon when disabled */
+}
+
+/* Add a shine effect to buttons */
+.difficulty-btn::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: 0.5s;
+    pointer-events: none;
+    border-radius: 20px;
+}
+
+.difficulty-btn:hover:not(:disabled)::after {
+    left: 100%;
 }
 
 .modal button:hover,
@@ -404,7 +498,8 @@ h2 {
 }
 
 .difficulty-btn .lock-icon {
-    display: none; /* Hidden by default */
+    display: none;
+    /* Hidden by default */
     width: 18px;
     height: 18px;
     fill: #fff;
@@ -416,10 +511,6 @@ h2 {
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
-}
-
-.difficulty-btn:disabled .lock-icon {
-    display: inline-block; /* Show lock icon when disabled */
 }
 
 /* Start screen updates */
@@ -549,14 +640,16 @@ h2 {
     font-family: 'Georgia', serif;
     font-style: italic;
     font-weight: bold;
-    font-size: 28px; /* Increased from 22px */
+    font-size: 28px;
+    /* Increased from 22px */
     color: #2c5364;
     display: flex;
     justify-content: center;
     align-items: center;
     width: 100%;
     height: 100%;
-    line-height: 1; /* Ensures proper vertical centering */
+    line-height: 1;
+    /* Ensures proper vertical centering */
 }
 
 /* --- Mobile Responsiveness --- */
