@@ -388,6 +388,9 @@ h2 {
     margin: 5px;
     transition: all 0.2s ease;
     position: relative;
+}
+
+.difficulty-btn {
     width: 80%;
 }
 
