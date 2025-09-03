@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let selectedValue = null;
     let selectedElement = null;
     let placementHistory = [];
+        let equationStates = new Map(); // Add this line
 
     const B = 'B';
 
@@ -116,10 +117,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         mediumBtn.disabled = playerProgress.highestLevelCompleted < medium.unlocksAt - 1;
         hardBtn.disabled = playerProgress.highestLevelCompleted < hard.unlocksAt - 1;
 
+        // Get the final level number from the hard difficulty range
+        const finalLevel = hard.levelRange[1];
+
         // Update welcome message based on player progress
         if (playerProgress.highestLevelCompleted === 0) {
             welcomeMessage.textContent = "Welcome to CrossMath!";
             playerLevelInfo.innerHTML = "Solve math puzzles by completing the crossword grid.";
+        } else if (playerProgress.highestLevelCompleted >= finalLevel) {
+            // Player has completed all levels
+            welcomeMessage.textContent = "Master Puzzler!";
+            playerLevelInfo.innerHTML = "Congratulations! You've completed all levels! Play any level again.";
         } else {
             const nextLevel = playerProgress.highestLevelCompleted + 1;
             welcomeMessage.textContent = "Welcome back!";
@@ -233,7 +241,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         gridElement.innerHTML = '';
         numberBankElement.innerHTML = '';
         placementHistory = [];
-        gridElement.style.gridTemplateColumns = `repeat(${puzzle.grid[0].length}, 50px)`;
+        
+        // Get grid dimensions
+        const gridSize = puzzle.grid.length;
+        
+        // Calculate cell size based on grid dimensions
+        // For larger grids, make cells smaller
+        let cellSize;
+        if (gridSize <= 5) {
+            cellSize = 50; // Original size for 5×5 grids
+        } else if (gridSize === 6) {
+            cellSize = 45; // Slightly smaller for 6×6
+        } else {
+            cellSize = 40; // Even smaller for 7×7
+        }
+        
+        // Set grid template columns based on the number of columns in the grid
+        gridElement.style.gridTemplateColumns = `repeat(${puzzle.grid[0].length}, ${cellSize}px)`;
+        
+        // Add a data attribute to the grid element for CSS targeting
+        gridElement.dataset.gridSize = gridSize;
 
         puzzle.grid.forEach((row, r) => {
             row.forEach((content, c) => {
@@ -241,6 +268,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 cell.classList.add('cell');
                 cell.dataset.row = r;
                 cell.dataset.col = c;
+                
+                // Set cell size dynamically
+                cell.style.width = `${cellSize}px`;
+                cell.style.height = `${cellSize}px`;
+                
+                // Adjust font size for larger grids
+                if (gridSize > 5) {
+                    cell.style.fontSize = `${24 - (gridSize - 5) * 2}px`;
+                }
 
                 if (puzzle.emptyCells.some(ec => ec.r === r && ec.c === c)) {
                     cell.classList.add('empty');
@@ -263,6 +299,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             numItem.addEventListener('click', () => selectNumberFromBank(num, numItem));
             numberBankElement.appendChild(numItem);
         });
+        equationStates.clear();
 
         clearSelection();
     }
@@ -329,120 +366,171 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
-    // --- EQUATION VALIDATION ---
+    // --- EQUATION VALIDATION (Corrected for Left-to-Right Calculation) ---
     function validateEquations() {
-        const gridCells = gridElement.querySelectorAll('.cell');
-        gridCells.forEach(c => c.classList.remove('correct', 'incorrect'));
+        // Clear all previous visual styles before re-evaluating
+        gridElement.querySelectorAll('.cell.correct, .cell.incorrect').forEach(c => {
+            c.classList.remove('correct', 'incorrect');
+        });
 
         const puzzle = levels.find(l => l.level === currentLevel);
         if (!puzzle) return;
 
         const equations = findEquations();
+        const newStates = new Map(); // Temporarily store the new state of all equations
         let allEquationsCorrect = true;
-        let allEmptyCellsFilled = true;
-        let hasPlayedIncorrectSound = false; // Flag to ensure we only play the sound once
 
-        puzzle.emptyCells.forEach(ec => {
+        const allEmptyCellsFilled = puzzle.emptyCells.every(ec => {
             const cell = gridElement.querySelector(`[data-row='${ec.r}'][data-col='${ec.c}']`);
-            if (!cell || !cell.textContent) {
-                allEmptyCellsFilled = false;
-            }
+            return cell && cell.textContent;
         });
 
         equations.forEach(eq => {
-            const cell1 = gridElement.querySelector(`[data-row='${eq.r1}'][data-col='${eq.c1}']`);
-            const cell2 = gridElement.querySelector(`[data-row='${eq.r2}'][data-col='${eq.c2}']`);
-            const resultCell = gridElement.querySelector(`[data-row='${eq.rr}'][data-col='${eq.cr}']`);
+            // A unique key to identify each equation (e.g., "H-0-0" for Horizontal at row 0, col 0)
+            const eqKey = `${eq.type}-${eq.start.r}-${eq.start.c}`;
+            
+            const numbers = eq.operandCells.map(cellPos => {
+                const cell = gridElement.querySelector(`[data-row='${cellPos.r}'][data-col='${cellPos.c}']`);
+                return parseInt(cell.textContent, 10);
+            });
+            const resultVal = parseInt(gridElement.querySelector(`[data-row='${eq.resultCell.r}'][data-col='${eq.resultCell.c}']`).textContent, 10);
 
-            if (!cell1 || !cell2 || !resultCell) return;
+            let currentState;
 
-            const val1 = parseInt(cell1.textContent);
-            const val2 = parseInt(cell2.textContent);
-            const resultVal = parseInt(resultCell.textContent);
-            const operator = eq.op;
-
-            if (isNaN(val1) || isNaN(val2) || isNaN(resultVal)) {
+            // Determine the current state: incomplete, correct, or incorrect
+            if (numbers.some(isNaN) || isNaN(resultVal)) {
+                currentState = 'incomplete';
                 allEquationsCorrect = false;
-                return;
-            }
-
-            let isCorrect = false;
-            switch (operator) {
-                case '+': isCorrect = (val1 + val2 === resultVal); break;
-                case '-': isCorrect = (val1 - val2 === resultVal); break;
-                case '*': isCorrect = (val1 * val2 === resultVal); break;
-                case '/': isCorrect = (val1 / val2 === resultVal && val1 % val2 === 0); break;
-            }
-
-            if (isCorrect) {
-                cell1.classList.add('correct');
-                cell2.classList.add('correct');
-                resultCell.classList.add('correct');
-
-                // Play correct sound if all cells in this equation have content
-                if (resultCell.textContent) {
-                    playSound(correctSound);
-                }
             } else {
-                // Log which equation failed
-                console.log(`Equation failed: ${val1} ${operator} ${val2} !== ${resultVal} at [r:${eq.r1},c:${eq.c1}]`);
-                cell1.classList.add('incorrect');
-                cell2.classList.add('incorrect');
-                resultCell.classList.add('incorrect');
-                allEquationsCorrect = false;
+                // This equation is fully populated, so let's validate it
+                let finalResult = numbers[0];
+                let calculationIsValid = true;
+                for (let i = 0; i < eq.operators.length; i++) {
+                    const operator = eq.operators[i];
+                    const nextNumber = numbers[i + 1];
+                    switch (operator) {
+                        case '+': finalResult += nextNumber; break;
+                        case '-': finalResult -= nextNumber; break;
+                        case '*': finalResult *= nextNumber; break;
+                        case '/':
+                            if (nextNumber === 0 || finalResult % nextNumber !== 0) {
+                                calculationIsValid = false;
+                            } else {
+                                finalResult /= nextNumber;
+                            }
+                            break;
+                    }
+                    if (!calculationIsValid) break;
+                }
 
-                // Play incorrect sound only once per validation
-                if (!hasPlayedIncorrectSound && resultCell.textContent) {
-                    playSound(incorrectSound);
-                    hasPlayedIncorrectSound = true;
+                if (calculationIsValid && finalResult === resultVal) {
+                    currentState = 'correct';
+                } else {
+                    currentState = 'incorrect';
+                    allEquationsCorrect = false;
                 }
             }
-        });
 
-        // Log validation status
-        console.log("Validation check:", {
-            allEmptyCellsFilled,
-            allEquationsCorrect,
-            equationsFound: equations.length
-        });
+            // --- State Change Logic for Audio Feedback ---
+            const oldState = equationStates.get(eqKey);
+            if (currentState !== oldState) {
+                if (currentState === 'correct') {
+                    playSound(correctSound); // Play sound ONLY when it becomes correct
+                } else if (currentState === 'incorrect') {
+                    playSound(incorrectSound); // Play sound ONLY when it becomes incorrect
+                }
+            }
 
+            // Apply visual feedback based on the current state (if not incomplete)
+            if (currentState === 'correct' || currentState === 'incorrect') {
+                const cssClass = currentState; // 'correct' or 'incorrect'
+                eq.allCells.forEach(cellPos => {
+                    const cell = gridElement.querySelector(`[data-row='${cellPos.r}'][data-col='${cellPos.c}']`);
+                    if (cell) cell.classList.add(cssClass);
+                });
+            }
+
+            newStates.set(eqKey, currentState); // Store the new state
+        });
+        
+        // After checking all equations, update the global state for the next move
+        equationStates = newStates;
+
+        // Check for puzzle completion
         if (allEmptyCellsFilled && allEquationsCorrect && equations.length > 0) {
             onPuzzleComplete();
         }
     }
 
+
+
     // *** REWRITTEN FUNCTION ***
     // This new function is more reliable as it looks for the '=' sign to define an equation,
     // which matches the structure of your puzzle grid.
+    // Update the findEquations function to work with any grid size
+
+    // This function dynamically finds equations of any length in the grid.
     function findEquations() {
         const puzzle = levels.find(l => l.level === currentLevel);
         if (!puzzle) return [];
 
         const grid = puzzle.grid;
+        const gridSize = grid.length;
         const equations = [];
-        const operators = ['+', '-', '*', '/'];
 
-        // Horizontal equations: check rows 0, 2, and 4
-        for (let r = 0; r < grid.length; r += 2) {
-            // Check if the row contains an operator and an equals sign in the right places
-            if (operators.includes(grid[r][1]) && grid[r][3] === '=') {
-                equations.push({ r1: r, c1: 0, op: grid[r][1], r2: r, c2: 2, rr: r, cr: 4 });
+        // Scan for HORIZONTAL equations
+        for (let r = 0; r < gridSize; r++) {
+            const eqIndex = grid[r].indexOf('=');
+            if (eqIndex > 1 && eqIndex < grid[r].length - 1) {
+                const equation = {
+                    type: 'H',
+                    start: { r: r, c: 0 },
+                    operandCells: [],
+                    operators: [],
+                    resultCell: { r: r, c: eqIndex + 1 },
+                    allCells: [{ r: r, c: eqIndex + 1 }]
+                };
+                for (let c = 0; c < eqIndex; c++) {
+                    if (c % 2 === 0) {
+                        equation.operandCells.push({ r: r, c: c });
+                        equation.allCells.push({ r: r, c: c });
+                    } else {
+                        equation.operators.push(grid[r][c]);
+                    }
+                }
+                if (equation.operandCells.length > 1) {
+                    equations.push(equation);
+                }
             }
         }
 
-        // Vertical equations: check columns 0, 2 but SKIP column 4
-        for (let c = 0; c < grid[0].length; c += 2) {
-            if (c === 4) { // Explicitly skip the final "results" column
-                continue;
-            }
-            // Check if the column contains an operator and an equals sign
-            if (operators.includes(grid[1][c]) && grid[3][c] === '=') {
-                equations.push({ r1: 0, c1: c, op: grid[1][c], r2: 2, c2: c, rr: 4, cr: c });
+        // Scan for VERTICAL equations
+        for (let c = 0; c < grid[0].length; c++) {
+            let eqIndex = -1;
+            for (let r = 0; r < gridSize; r++) { if (grid[r][c] === '=') { eqIndex = r; break; } }
+            
+            if (eqIndex > 1 && eqIndex < gridSize - 1) {
+                const equation = {
+                    type: 'V',
+                    start: { r: 0, c: c },
+                    operandCells: [],
+                    operators: [],
+                    resultCell: { r: eqIndex + 1, c: c },
+                    allCells: [{ r: eqIndex + 1, c: c }]
+                };
+                for (let r = 0; r < eqIndex; r++) {
+                    if (r % 2 === 0) {
+                        equation.operandCells.push({ r: r, c: c });
+                        equation.allCells.push({ r: r, c: c });
+                    } else {
+                        equation.operators.push(grid[r][c]);
+                    }
+                }
+                if (equation.operandCells.length > 1) {
+                    equations.push(equation);
+                }
             }
         }
-
-        // *** DEBUGGING: Log the equations that were found ***
-        console.log(`Found ${equations.length} equations to validate for Level ${currentLevel}.`);
         return equations;
     }
     // --- Event Listeners ---
@@ -493,4 +581,97 @@ document.addEventListener('DOMContentLoaded', async () => {
         const startLevel = Math.max(config.difficulties.hard.levelRange[0], playerProgress.highestLevelCompleted + 1);
         startGame(startLevel > config.difficulties.hard.levelRange[1] ? config.difficulties.hard.levelRange[0] : startLevel);
     });
+
+    // --- DEBUG TOOLS ---
+    const debugPanel = document.getElementById('debug-panel');
+    const toggleDebugBtn = document.getElementById('toggle-debug-btn');
+    const levelInput = document.getElementById('level-input');
+    const jumpLevelBtn = document.getElementById('jump-level-btn');
+    const validateGridBtn = document.getElementById('validate-grid-btn');
+    const resetProgressBtn = document.getElementById('reset-progress-btn');
+
+    // Toggle debug panel visibility
+    toggleDebugBtn.addEventListener('click', () => {
+        debugPanel.classList.toggle('open');
+    });
+
+    // Jump to a specific level
+    jumpLevelBtn.addEventListener('click', () => {
+        const levelNumber = parseInt(levelInput.value);
+        if (isNaN(levelNumber) || levelNumber < 1 || levelNumber > levels.length) {
+            alert(`Please enter a valid level number between 1 and ${levels.length}`);
+            return;
+        }
+        
+        startGame(levelNumber);
+        
+        // Optional: Close debug panel after jumping to level
+        debugPanel.classList.remove('open');
+    });
+
+    // Manually trigger validation for debugging
+    validateGridBtn.addEventListener('click', () => {
+        validateEquations();
+        
+        // Log additional debug info
+        const puzzle = levels.find(l => l.level === currentLevel);
+        if (puzzle) {
+            const emptyCellsFilled = puzzle.emptyCells.every(ec => {
+                const cell = gridElement.querySelector(`[data-row='${ec.r}'][data-col='${ec.c}']`);
+                return cell && cell.textContent;
+            });
+            
+            console.log('Debug validation info:');
+            console.log('- All empty cells filled:', emptyCellsFilled);
+            console.log('- Expected empty cell values:', puzzle.emptyCells.map(ec => ec.value));
+            console.log('- Actual values in grid:');
+            
+            puzzle.emptyCells.forEach(ec => {
+                const cell = gridElement.querySelector(`[data-row='${ec.r}'][data-col='${ec.c}']`);
+                console.log(`  Cell [${ec.r},${ec.c}]: expected=${ec.value}, actual=${cell ? cell.textContent : 'empty'}`);
+            });
+        }
+    });
+
+    // Reset player progress (for testing)
+    resetProgressBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to reset all progress? This will remove all level completions.')) {
+            playerProgress = { highestLevelCompleted: 0 };
+            saveProgress();
+            updateStartScreen();
+            alert('Progress has been reset');
+        }
+    });
+
+    // Update level input max value once levels are loaded
+    levelInput.max = levels.length;
+
+    // Debug mode key sequence detector
+    const debugSequence = ['d', 'e', 'b', 'u', 'g'];
+    let debugKeyBuffer = [];
+
+    document.addEventListener('keydown', (e) => {
+        // Only track alphabetic keys
+        if (/^[a-z]$/i.test(e.key)) {
+            const key = e.key.toLowerCase();
+            debugKeyBuffer.push(key);
+            
+            // Keep only the last 5 keys
+            if (debugKeyBuffer.length > 5) {
+                debugKeyBuffer.shift();
+            }
+            
+            // Check if the sequence matches
+            const sequenceMatches = debugKeyBuffer.join('') === debugSequence.join('');
+            
+            if (sequenceMatches) {
+                // Toggle debug panel visibility
+                debugPanel.style.display = debugPanel.style.display === 'none' ? 'block' : 'none';
+                debugKeyBuffer = []; // Reset the buffer
+            }
+        }
+    });
+
+    // Initially hide debug panel if you want to make it hidden by default
+    debugPanel.style.display = 'none';
 });

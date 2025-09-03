@@ -216,6 +216,9 @@ h2 {
     /* Adjusted margin */
 }
 
+/* Add these new styles for flexible grid sizes */
+
+/* Base styles for the grid remain the same */
 #crossword-grid {
     display: grid;
     gap: 8px;
@@ -226,6 +229,70 @@ h2 {
     background: linear-gradient(to right, rgb(109, 213, 237), rgb(33, 147, 176));
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+/* Adjust gap for larger grids */
+#crossword-grid[data-grid-size="6"] {
+    gap: 6px;
+}
+
+#crossword-grid[data-grid-size="7"] {
+    gap: 4px;
+    padding: 20px;
+}
+
+/* Responsive adjustments for different screen sizes */
+@media (max-width: 600px) {
+    .cell,
+    .number-item {
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 1.5em !important;
+        border-radius: 8px;
+    }
+    
+    #crossword-grid[data-grid-size="6"] .cell {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.3em !important;
+    }
+    
+    #crossword-grid[data-grid-size="7"] .cell {
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 1.1em !important;
+    }
+
+    #crossword-grid {
+        gap: 4px;
+    }
+    
+    #crossword-grid[data-grid-size="6"],
+    #crossword-grid[data-grid-size="7"] {
+        gap: 3px;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 380px) {
+    .cell,
+    .number-item {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 1.3em !important;
+    }
+    
+    #crossword-grid[data-grid-size="6"] .cell {
+        width: 35px !important;
+        height: 35px !important;
+        font-size: 1.2em !important;
+    }
+    
+    #crossword-grid[data-grid-size="7"] .cell {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 1em !important;
+    }
 }
 
 /* --- Grid Cells --- */
@@ -724,5 +791,113 @@ h2 {
         width: 40px;
         height: 40px;
         font-size: 1.3em;
+    }
+}
+
+/* Add these styles at the end of your CSS file */
+
+/* Debug Panel Styles */
+.debug-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 10px;
+    padding: 10px;
+    width: 220px;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.debug-header h3 {
+    margin: 0;
+    font-size: 14px;
+    color: #6dd5ed;
+}
+
+.debug-panel .icon-btn {
+    width: 30px;
+    height: 30px;
+    background-color: transparent;
+}
+
+.debug-panel .icon-btn svg {
+    fill: white;
+}
+
+.debug-content {
+    font-size: 12px;
+}
+
+.level-jump-section {
+    margin-bottom: 15px;
+}
+
+.level-jump-section h4 {
+    margin: 0 0 5px 0;
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+.level-input-group {
+    display: flex;
+    gap: 5px;
+}
+
+.level-input-group input {
+    flex: 1;
+    padding: 5px;
+    border-radius: 4px;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.debug-btn {
+    background-color: rgba(109, 213, 237, 0.2);
+    color: white;
+    border: 1px solid rgba(109, 213, 237, 0.4);
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.debug-btn:hover {
+    background-color: rgba(109, 213, 237, 0.4);
+}
+
+.debug-btn.danger {
+    background-color: rgba(255, 77, 77, 0.2);
+    border-color: rgba(255, 77, 77, 0.4);
+}
+
+.debug-btn.danger:hover {
+    background-color: rgba(255, 77, 77, 0.4);
+}
+
+@media (max-width: 600px) {
+    .debug-panel {
+        bottom: 10px;
+        right: 10px;
+        width: 180px;
     }
 }

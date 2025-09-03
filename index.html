@@ -142,6 +142,30 @@
         </div>
     </div>
 
+    <div id="debug-panel" class="debug-panel">
+        <div class="debug-header">
+            <h3>Debug Mode</h3>
+            <button id="toggle-debug-btn" class="icon-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                </svg>
+            </button>
+        </div>
+        <div class="debug-content">
+            <div class="level-jump-section">
+                <h4>Jump to Level:</h4>
+                <div class="level-input-group">
+                    <input type="number" id="level-input" min="1" max="22" value="1">
+                    <button id="jump-level-btn" class="debug-btn">Go</button>
+                </div>
+            </div>
+            <div class="quick-actions">
+                <button id="validate-grid-btn" class="debug-btn">Validate Grid</button>
+                <button id="reset-progress-btn" class="debug-btn danger">Reset Progress</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 
